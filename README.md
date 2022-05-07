@@ -1,5 +1,6 @@
 # Faster
 
-Internet availability and speed monitoring solution
+Internet availability and speed analytics
 
-- Speedtest runner
+- Ping and Speedtest runner
+- Speedtest Flink App

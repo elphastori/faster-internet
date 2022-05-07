@@ -1,0 +1,1 @@
+*/30 * * * * /Users/Elphas/src/faster/runner/speedtest.sh
