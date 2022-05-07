@@ -108,8 +108,8 @@ public class StreamingJob {
 		DataStream<Speedtest> mappedInput = createKinesisSource(env, parameter);
 
 		String region = parameter.get("Region", "us-east-1");
-		String databaseName = parameter.get("TimestreamDbName", "kdaflink");
-		String tableName = parameter.get("TimestreamTableName", "kinesisdata");
+		String databaseName = parameter.get("TimestreamDbName", "faster");
+		String tableName = parameter.get("TimestreamTableName", "speedtestdata");
 		long memoryStoreTTLHours = Long.parseLong(parameter.get("MemoryStoreTTLHours", "24"));
 		long magneticStoreTTLDays = Long.parseLong(parameter.get("MagneticStoreTTLDays", "7"));
 
