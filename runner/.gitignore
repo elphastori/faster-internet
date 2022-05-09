@@ -1,2 +1,3 @@
 .env
-log.txt
+speedtest-log.txt
+ping-log.txt

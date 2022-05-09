@@ -15,7 +15,7 @@ kinesis_client = boto3.client('kinesis', region_name=REGION)
 
 def ping_url(url):
     response = subprocess.Popen(
-        f"ping -c 1 {url}",
+        f"/sbin/ping -c 1 {url}",
         shell=True,
         stdout=subprocess.PIPE).stdout.read().decode('utf-8')
 
