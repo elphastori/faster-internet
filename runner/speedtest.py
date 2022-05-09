@@ -3,6 +3,7 @@ import json
 import re
 import subprocess
 import datetime
+import os
 
 import boto3
 
@@ -32,7 +33,7 @@ def run_speedtest():
         "jitter": float(jitter),
         "download": float(download),
         "upload": float(upload),
-        "host": "RaspberryPi"
+        "host": os.environ["HOST"]
     })
 
 def put_results(speedtest):
