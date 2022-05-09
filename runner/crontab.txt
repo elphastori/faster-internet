@@ -1,1 +1,2 @@
-*/30 * * * * /Users/Elphas/src/faster/runner/speedtest.sh
+*/30 * * * * ~/src/faster/runner/speedtest.sh
+* * * * * ~/src/faster/runner/ping.sh
