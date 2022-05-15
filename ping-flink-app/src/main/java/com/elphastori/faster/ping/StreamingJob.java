@@ -18,27 +18,35 @@
 
 package com.elphastori.faster.ping;
 
-import java.time.Duration;
-import java.util.List;
-import java.util.Properties;
-
-import com.elphastori.faster.ping.kinesis.RoundRobinKinesisShardAssigner;
-import com.elphastori.faster.ping.model.Ping;
-import com.elphastori.faster.ping.model.TimestreamRecordConverter;
-import com.elphastori.faster.ping.utils.ParameterToolUtils;
-import com.elphastori.faster.ping.model.TimestreamRecordDeserializer;
-import com.amazonaws.samples.connectors.timestream.TimestreamSinkConfig;
-import com.amazonaws.samples.connectors.timestream.TimestreamSink;
+import org.apache.flink.api.common.state.ValueState;
+import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.java.utils.ParameterTool;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.KeyedProcessFunction;
 import org.apache.flink.streaming.connectors.kinesis.FlinkKinesisConsumer;
 import org.apache.flink.streaming.connectors.kinesis.config.AWSConfigConstants;
 import org.apache.flink.streaming.connectors.kinesis.config.ConsumerConfigConstants;
+import org.apache.flink.util.Collector;
+
+import com.amazonaws.samples.connectors.timestream.TimestreamSink;
+import com.amazonaws.samples.connectors.timestream.TimestreamSinkConfig;
+import com.elphastori.faster.ping.kinesis.RoundRobinKinesisShardAssigner;
+import com.elphastori.faster.ping.model.Ping;
+import com.elphastori.faster.ping.model.TimestreamRecordConverter;
+import com.elphastori.faster.ping.model.TimestreamRecordDeserializer;
+import com.elphastori.faster.ping.utils.ParameterToolUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.timestreamwrite.model.Record;
 import software.amazon.awssdk.services.timestreamwrite.model.WriteRecordsRequest;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.Properties;
 
 /**
  * Ping Flink Streaming Job.
@@ -153,10 +161,58 @@ public class StreamingJob {
 								.build())
 						.build()
 		);
+
 		mappedInput
+				.keyBy((Ping ping) -> ping.getHost())
+				.process(new TimeoutFunction(60 * 1000, 15 * 1000))
 				.sinkTo(sink)
 				.name("TimestreamSink")
 				.disableChaining();
+
 		env.execute("Ping Flink Streaming Job");
+	}
+
+	public static class TimeoutFunction extends KeyedProcessFunction<String, Ping, Ping> {
+
+		private final long timeout;
+		private final long allowedLateness;
+		private ValueState<Long> lastTimer;
+
+		public TimeoutFunction(long timeout, long allowedLateness) {
+			this.timeout = timeout;
+			this.allowedLateness = allowedLateness;
+		}
+
+		@Override
+		public void open(Configuration conf) {
+			ValueStateDescriptor<Long> lastTimerDesc = new ValueStateDescriptor<>("lastTimer", Long.class);
+			lastTimer = getRuntimeContext().getState(lastTimerDesc);
+		}
+
+		@Override
+		public void processElement(Ping ping, Context context, Collector<Ping> out) throws IOException {
+			long currentTime = context.timerService().currentProcessingTime();
+			long timeoutTime = currentTime + timeout + allowedLateness;
+			context.timerService().registerProcessingTimeTimer(timeoutTime);
+			lastTimer.update(timeoutTime);
+			out.collect(ping);
+		}
+
+		@Override
+		public void onTimer(long timestamp, OnTimerContext context, Collector<Ping> out) throws IOException {
+			if (timestamp == lastTimer.value()) {
+				long timeoutTime = timestamp + timeout;
+				context.timerService().registerProcessingTimeTimer(timeoutTime);
+				lastTimer.update(timeoutTime);
+
+				out.collect(Ping.builder()
+						.time(Instant.ofEpochMilli(timestamp - allowedLateness).toString())
+						.google(0.0)
+						.facebook(0.0)
+						.amazon(0.0)
+						.host(context.getCurrentKey())
+						.build());
+			}
+		}
 	}
 }
