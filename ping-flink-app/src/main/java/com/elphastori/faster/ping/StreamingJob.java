@@ -18,6 +18,7 @@
 
 package com.elphastori.faster.ping;
 
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -104,6 +105,7 @@ public class StreamingJob {
 
 		return env
 				.addSource(flinkKinesisConsumer)
+				.assignTimestampsAndWatermarks(WatermarkStrategy.forMonotonousTimestamps())
 				.name("KinesisSource");
 	}
 
@@ -117,9 +119,9 @@ public class StreamingJob {
 
 		String region = parameter.get("Region", "us-east-1");
 		String databaseName = parameter.get("TimestreamDbName", "faster");
-		String tableName = parameter.get("TimestreamTableName", "pingdata");
-		long memoryStoreTTLHours = Long.parseLong(parameter.get("MemoryStoreTTLHours", "24"));
-		long magneticStoreTTLDays = Long.parseLong(parameter.get("MagneticStoreTTLDays", "7"));
+		String tableName = parameter.get("TimestreamTableName", "pings");
+		long memoryStoreTTLHours = Long.parseLong(parameter.get("MemoryStoreTTLHours", "168")); // 24 * 7
+		long magneticStoreTTLDays = Long.parseLong(parameter.get("MagneticStoreTTLDays", "365"));
 
 		// EndpointOverride is optional. Learn more here: https://docs.aws.amazon.com/timestream/latest/developerguide/architecture.html#cells
 		String endpointOverride = parameter.get("EndpointOverride", "");
@@ -191,9 +193,9 @@ public class StreamingJob {
 
 		@Override
 		public void processElement(Ping ping, Context context, Collector<Ping> out) throws IOException {
-			long currentTime = context.timerService().currentProcessingTime();
+			long currentTime = context.timerService().currentWatermark();
 			long timeoutTime = currentTime + timeout + allowedLateness;
-			context.timerService().registerProcessingTimeTimer(timeoutTime);
+			context.timerService().registerEventTimeTimer(timeoutTime);
 			lastTimer.update(timeoutTime);
 			out.collect(ping);
 		}
@@ -202,7 +204,7 @@ public class StreamingJob {
 		public void onTimer(long timestamp, OnTimerContext context, Collector<Ping> out) throws IOException {
 			if (timestamp == lastTimer.value()) {
 				long timeoutTime = timestamp + timeout;
-				context.timerService().registerProcessingTimeTimer(timeoutTime);
+				context.timerService().registerEventTimeTimer(timeoutTime);
 				lastTimer.update(timeoutTime);
 
 				out.collect(Ping.builder()

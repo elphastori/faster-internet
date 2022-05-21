@@ -32,7 +32,7 @@ public class TimestreamRecordDeserializerTest {
         Assertions.assertTrue(record.hasMeasureValues());
         Assertions.assertEquals(MeasureValueType.MULTI,
                 record.measureValueType());
-        Assertions.assertEquals("speedtest_record", record.measureName());
+        Assertions.assertEquals("speedtest", record.measureName());
         Assertions.assertEquals("1651516045744", record.time());
         Assertions.assertEquals(TimeUnit.MILLISECONDS, record.timeUnit());
 

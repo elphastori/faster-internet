@@ -29,6 +29,8 @@ import com.elphastori.faster.speedtest.utils.ParameterToolUtils;
 import com.elphastori.faster.speedtest.model.TimestreamRecordDeserializer;
 import com.amazonaws.samples.connectors.timestream.TimestreamSinkConfig;
 import com.amazonaws.samples.connectors.timestream.TimestreamSink;
+
+import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -96,6 +98,7 @@ public class StreamingJob {
 
 		return env
 				.addSource(flinkKinesisConsumer)
+				.assignTimestampsAndWatermarks(WatermarkStrategy.forMonotonousTimestamps())
 				.name("KinesisSource");
 	}
 
@@ -109,9 +112,9 @@ public class StreamingJob {
 
 		String region = parameter.get("Region", "us-east-1");
 		String databaseName = parameter.get("TimestreamDbName", "faster");
-		String tableName = parameter.get("TimestreamTableName", "speedtestdata");
-		long memoryStoreTTLHours = Long.parseLong(parameter.get("MemoryStoreTTLHours", "24"));
-		long magneticStoreTTLDays = Long.parseLong(parameter.get("MagneticStoreTTLDays", "7"));
+		String tableName = parameter.get("TimestreamTableName", "speedtests");
+		long memoryStoreTTLHours = Long.parseLong(parameter.get("MemoryStoreTTLHours", "168")); // 24 * 7
+		long magneticStoreTTLDays = Long.parseLong(parameter.get("MagneticStoreTTLDays", "365"));
 
 		// EndpointOverride is optional. Learn more here: https://docs.aws.amazon.com/timestream/latest/developerguide/architecture.html#cells
 		String endpointOverride = parameter.get("EndpointOverride", "");

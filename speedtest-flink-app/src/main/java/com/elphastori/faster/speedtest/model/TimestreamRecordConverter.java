@@ -40,7 +40,7 @@ public class TimestreamRecordConverter {
 
         return Record.builder()
                 .dimensions(dimensions)
-                .measureName("speedtest_record")
+                .measureName("speedtest")
                 .measureValueType("MULTI")
                 .measureValues(measureValues)
                 .timeUnit(TimeUnit.MILLISECONDS)

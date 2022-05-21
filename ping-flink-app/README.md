@@ -26,5 +26,5 @@ mvn clean compile && mvn package
 
 You can run the application on your local environment by running `StreamingJobs` class:
 ```
-mvn install exec:java -Dexec.mainClass="com.elphastori.faster.ping.StreamingJob" -Dexec.args="--InputStreamName PingStream --Region us-east-1 --TimestreamDbName faster --TimestreamTableName pingdata" -Dexec.classpathScope=test
+mvn install exec:java -Dexec.mainClass="com.elphastori.faster.ping.StreamingJob" -Dexec.args="--InputStreamName PingStream --Region us-east-1 --TimestreamDbName faster --TimestreamTableName pings" -Dexec.classpathScope=test
 ```

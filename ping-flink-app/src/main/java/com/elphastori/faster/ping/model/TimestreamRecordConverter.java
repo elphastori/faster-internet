@@ -36,7 +36,7 @@ public class TimestreamRecordConverter {
 
         return Record.builder()
                 .dimensions(dimensions)
-                .measureName("ping_record")
+                .measureName("ping")
                 .measureValueType("MULTI")
                 .measureValues(measureValues)
                 .timeUnit(TimeUnit.MILLISECONDS)

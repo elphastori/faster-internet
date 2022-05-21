@@ -26,5 +26,5 @@ mvn clean compile && mvn package
 
 You can run the application on your local environment by running `StreamingJobs` class:
 ```
-mvn install exec:java -Dexec.mainClass="com.elphastori.faster.speedtest.StreamingJob" -Dexec.args="--InputStreamName SpeedtestStream --Region us-east-1 --TimestreamDbName faster --TimestreamTableName speedtestdata" -Dexec.classpathScope=test
+mvn install exec:java -Dexec.mainClass="com.elphastori.faster.speedtest.StreamingJob" -Dexec.args="--InputStreamName SpeedtestStream --Region us-east-1 --TimestreamDbName faster --TimestreamTableName speedtests" -Dexec.classpathScope=test
 ```
