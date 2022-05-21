@@ -17,7 +17,7 @@ def run_speedtest():
     logging.info(f"Running speedtest...")
 
     response = subprocess.Popen(
-        '/usr/local/bin/speedtest --accept-license --accept-gdpr',
+        '/usr/bin/speedtest --accept-license --accept-gdpr',
         shell=True,
         stdout=subprocess.PIPE).stdout.read().decode('utf-8')
 
