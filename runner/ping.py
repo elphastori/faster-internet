@@ -13,6 +13,7 @@ REGION = "us-east-1"
 logger = logging.getLogger(__name__)
 kinesis_client = boto3.client('kinesis', region_name=REGION)
 
+
 def ping_url(url):
     response = subprocess.Popen(
         f"/usr/bin/ping -c 1 {url}",
@@ -20,6 +21,7 @@ def ping_url(url):
         stdout=subprocess.PIPE).stdout.read().decode('utf-8')
 
     return float(re.search('time=(.*?)\s', response, re.MULTILINE).group(1))
+
 
 def ping_urls():
     logging.info(f"Pinging URLs...")
@@ -38,6 +40,7 @@ def ping_urls():
         "host": os.environ["HOST"]
     })
 
+
 def put_results(ping_stats):
     logging.info(f"Putting results to Kinesis: {ping_stats}")
 
@@ -45,6 +48,7 @@ def put_results(ping_stats):
         StreamName=STREAM_NAME,
         Data=json.dumps(ping_stats),
         PartitionKey="partitionkey")
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")

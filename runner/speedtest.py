@@ -13,6 +13,7 @@ REGION = "us-east-1"
 logger = logging.getLogger(__name__)
 kinesis_client = boto3.client('kinesis', region_name=REGION)
 
+
 def run_speedtest():
     logging.info(f"Running speedtest...")
 
@@ -36,6 +37,7 @@ def run_speedtest():
         "host": os.environ["HOST"]
     })
 
+
 def put_results(speedtest):
     logging.info(f"Putting results to Kinesis: {speedtest}")
 
@@ -43,6 +45,7 @@ def put_results(speedtest):
         StreamName=STREAM_NAME,
         Data=json.dumps(speedtest),
         PartitionKey="partitionkey")
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")

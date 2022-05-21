@@ -1,3 +1,4 @@
 .env
 speedtest-log.txt
 ping-log.txt
+.idea/
