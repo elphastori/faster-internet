@@ -18,7 +18,6 @@
 
 package com.elphastori.faster.ping;
 
-import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -105,7 +104,6 @@ public class StreamingJob {
 
 		return env
 				.addSource(flinkKinesisConsumer)
-				.assignTimestampsAndWatermarks(WatermarkStrategy.forMonotonousTimestamps())
 				.name("KinesisSource");
 	}
 
@@ -193,9 +191,9 @@ public class StreamingJob {
 
 		@Override
 		public void processElement(Ping ping, Context context, Collector<Ping> out) throws IOException {
-			long currentTime = context.timerService().currentWatermark();
+			long currentTime = context.timerService().currentProcessingTime();
 			long timeoutTime = currentTime + timeout + allowedLateness;
-			context.timerService().registerEventTimeTimer(timeoutTime);
+			context.timerService().registerProcessingTimeTimer(timeoutTime);
 			lastTimer.update(timeoutTime);
 			out.collect(ping);
 		}
@@ -204,7 +202,7 @@ public class StreamingJob {
 		public void onTimer(long timestamp, OnTimerContext context, Collector<Ping> out) throws IOException {
 			if (timestamp == lastTimer.value()) {
 				long timeoutTime = timestamp + timeout;
-				context.timerService().registerEventTimeTimer(timeoutTime);
+				context.timerService().registerProcessingTimeTimer(timeoutTime);
 				lastTimer.update(timeoutTime);
 
 				out.collect(Ping.builder()
