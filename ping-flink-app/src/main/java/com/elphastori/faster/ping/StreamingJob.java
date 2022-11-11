@@ -39,6 +39,16 @@ import com.elphastori.faster.ping.model.TimestreamRecordDeserializer;
 import com.elphastori.faster.ping.utils.ParameterToolUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.PublishRequest;
+import software.amazon.awssdk.services.sns.model.PublishResponse;
+import software.amazon.awssdk.services.sns.model.SnsException;
 import software.amazon.awssdk.services.timestreamwrite.model.Record;
 import software.amazon.awssdk.services.timestreamwrite.model.WriteRecordsRequest;
 
@@ -46,6 +56,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -172,6 +183,20 @@ public class StreamingJob {
 		env.execute("Ping Flink Streaming Job");
 	}
 
+	public static void pubTextSMS(SnsClient snsClient, String message, String phoneNumber) {
+		try {
+			PublishRequest request = PublishRequest.builder()
+					.message(message)
+					.phoneNumber(phoneNumber)
+					.build();
+
+			PublishResponse result = snsClient.publish(request);
+			System.out.println(result.messageId() + " Message sent. Status was " + result.sdkHttpResponse().statusCode());
+		} catch (SnsException e) {
+			System.err.println(e.awsErrorDetails().errorMessage());
+		}
+	}
+
 	public static class TimeoutFunction extends KeyedProcessFunction<String, Ping, Ping> {
 
 		private final long timeout;
@@ -205,12 +230,51 @@ public class StreamingJob {
 				context.timerService().registerProcessingTimeTimer(timeoutTime);
 				lastTimer.update(timeoutTime);
 
+				String host = context.getCurrentKey();
+
+				ProfileCredentialsProvider credentialsProvider = ProfileCredentialsProvider.create();
+
+				DynamoDbClient ddb = DynamoDbClient.builder()
+						.credentialsProvider(credentialsProvider)
+						.region(Region.US_EAST_1)
+						.build();
+
+				GetItemRequest request = GetItemRequest.builder()
+						.key(Map.of("userName", AttributeValue.builder().s(host).build()))
+						.tableName("FasterInternetUsers")
+						.build();
+
+				Map<String, AttributeValue> returnedItem;
+
+				try {
+					returnedItem = ddb.getItem(request).item();
+					ddb.close();
+				} catch (DynamoDbException e) {
+					System.err.println(e.getMessage());
+					return;
+				}
+
+				if (returnedItem == null) {
+					System.out.format("No item found with the key %s!\n", host);
+					return;
+				}
+
+				String phoneNumber = returnedItem.get("phoneNumber").s();
+
+				String message = "Your internet connection is down. Please check your router.";
+				SnsClient snsClient = SnsClient.builder()
+								.credentialsProvider(credentialsProvider)
+								.region(Region.US_EAST_1)
+								.build();
+				pubTextSMS(snsClient, message, phoneNumber);
+				snsClient.close();
+
 				out.collect(Ping.builder()
 						.time(Instant.ofEpochMilli(timestamp - allowedLateness).toString())
 						.google(0.0)
 						.facebook(0.0)
 						.amazon(0.0)
-						.host(context.getCurrentKey())
+						.host(host)
 						.build());
 			}
 		}
