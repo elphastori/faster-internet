@@ -39,7 +39,6 @@ import com.elphastori.faster.ping.model.TimestreamRecordDeserializer;
 import com.elphastori.faster.ping.utils.ParameterToolUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -232,10 +231,7 @@ public class StreamingJob {
 
 				String host = context.getCurrentKey();
 
-				ProfileCredentialsProvider credentialsProvider = ProfileCredentialsProvider.create();
-
 				DynamoDbClient ddb = DynamoDbClient.builder()
-						.credentialsProvider(credentialsProvider)
 						.region(Region.US_EAST_1)
 						.build();
 
@@ -263,7 +259,6 @@ public class StreamingJob {
 
 				String message = "Your internet connection is down. Please check your router.";
 				SnsClient snsClient = SnsClient.builder()
-								.credentialsProvider(credentialsProvider)
 								.region(Region.US_EAST_1)
 								.build();
 				pubTextSMS(snsClient, message, phoneNumber);
