@@ -257,7 +257,7 @@ public class StreamingJob {
 
 				String phoneNumber = returnedItem.get("phoneNumber").s();
 
-				String message = "Your internet connection is down. Please check your router.";
+				String message = "Hi " + host + ", your internet connection is down. Please check your router or contact your ISP.";
 				SnsClient snsClient = SnsClient.builder()
 								.region(Region.US_EAST_1)
 								.build();
